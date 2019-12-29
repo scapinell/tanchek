@@ -5,7 +5,7 @@ import pygame as pg
 
 SCREENRECT = pg.Rect(0, 0, 800, 552)
 # size = width, height = 1000, 800
-MAX_SHOTS = 3
+MAX_SHOTS = 10
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]  # D:\somegame
 
@@ -49,10 +49,11 @@ class Ammo(pg.sprite.Sprite):
     direction = 1
     images = []
 
-    def __init__(self, pos):
+    def __init__(self, pos, direction):
         pg.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=pos)
+        self.direction = direction
         # self.rect = self.image.get_rect(center=(pos_x, pos_y)) why does it not fucking work???
 
     def update(self):
@@ -105,15 +106,10 @@ def main():
 
     tanchek = Tanchek()
 
-    direction_flag = 1
-
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 sys.exit()
-        # if event.type == pg.KEYDOWN:
-        #     if event.key == pg.K_SPACE:
-        #         Ammo(tanchek.rect.center)
 
         keystate = pg.key.get_pressed()
 
@@ -123,23 +119,16 @@ def main():
         direction_flags = [1, 2, 3, 4]
         if keystate[pg.K_w]:
             tanchek.move(1)
-            #direction_flag = 1
         elif keystate[pg.K_d]:
             tanchek.move(2)
-            #direction_flag = 2
         elif keystate[pg.K_a]:
             tanchek.move(4)
-            #direction_flag = 4
         elif keystate[pg.K_s]:
             tanchek.move(3)
-            #direction_flag = 3
-
-        print(tanchek.facing)
-        Ammo.direction = direction_flag
 
         firing = keystate[pg.K_SPACE]
         if not tanchek.reloading and firing and len(ammos) < MAX_SHOTS:
-            Ammo(tanchek.rect.center)
+            ammo = Ammo(tanchek.rect.center, tanchek.facing)
         tanchek.reloading = firing
 
         dirty = all.draw(screen)
