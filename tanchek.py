@@ -24,12 +24,14 @@ class Tanchek(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
+        self.surface = self.image.set_colorkey((255, 255, 255))
         self.rect = self.image.get_rect(midbottom=SCREENRECT.midbottom)
         self.facing = 1
         self.reloading = 0
 
     def move(self, direction):
         self.facing = direction
+        self.surface = self.image.set_colorkey((255, 255, 255))
         if direction == 1:
             self.image = self.images[0]
             self.rect.move_ip(0, -self.speed)
@@ -54,11 +56,13 @@ class Ammo(pg.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=pos)
         self.direction = direction
+        self.surface = self.image.set_colorkey((255, 255, 255))
         # self.rect = self.image.get_rect(center=(pos_x, pos_y)) why does it not fucking work???
 
     def update(self):
 
         # self.rect.move_ip(self.direction, self.speed)
+        self.surface = self.image.set_colorkey((255, 255, 255))
         if self.direction == 1:
             self.image = self.images[0]
             self.rect.move_ip(0, -self.speed)
@@ -79,7 +83,7 @@ def main():
     pg.init()
     screen = pg.display.set_mode(SCREENRECT.size)
     # size = width, height = 800, 552
-    # backColor = 0, 30, 0
+    back_color = 0, 30, 0
     # screen = pg.display.set_mode(size)
 
     img = load_image("tanchek.png")
@@ -93,7 +97,7 @@ def main():
         background.blit(back_piece, (x, 0))  # draws backPiece onto background
     screen.blit(background, (0, 0))
     pg.display.flip()
-    # screen.fill(backColor)
+    # screen.fill(back_color)
     # pg.display.flip()
 
     ammos = pg.sprite.Group()
@@ -105,6 +109,7 @@ def main():
     clock = pg.time.Clock()
 
     tanchek = Tanchek()
+    #screen.blit(tanchek.image, tanchek.rect)
 
     while True:
         for event in pg.event.get():
@@ -116,7 +121,6 @@ def main():
         all.clear(screen, background)
         all.update()
 
-        direction_flags = [1, 2, 3, 4]
         if keystate[pg.K_w]:
             tanchek.move(1)
         elif keystate[pg.K_d]:
@@ -128,7 +132,7 @@ def main():
 
         firing = keystate[pg.K_SPACE]
         if not tanchek.reloading and firing and len(ammos) < MAX_SHOTS:
-            ammo = Ammo(tanchek.rect.center, tanchek.facing)
+            Ammo(tanchek.rect.center, tanchek.facing)
         tanchek.reloading = firing
 
         dirty = all.draw(screen)
