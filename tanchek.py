@@ -1,11 +1,13 @@
 import os
 import sys
+import random
 
 import pygame as pg
 
 SCREENRECT = pg.Rect(0, 0, 800, 552)
 # size = width, height = 1000, 800
 MAX_SHOTS = 10
+MAX_OBSTACLES = 3
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]  # D:\somegame
 
@@ -79,17 +81,50 @@ class Ammo(pg.sprite.Sprite):
         if self.rect.top <= 0 or self.rect.bottom >= 552 or self.rect.left <= 0 or self.rect.right >= 800:
             self.kill()
 
+
+class Obstacle(pg.sprite.Sprite):
+    images = []
+    collide_counter = 0
+
+    def __init__(self, x, y):
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect(center=(x, y))
+        self.surface = self.image.set_colorkey((255, 255, 255))
+    def update(self):
+        self.surface = self.image.set_colorkey((255, 255, 255))
+
+
+class Explosion(pg.sprite.Sprite):
+    images = []
+    defaultlife = 10
+
+    def __init__(self, actor):
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect(center=actor.rect.center)
+        self.surface = self.image.set_colorkey((255, 255, 255))
+        self.life = self.defaultlife
+
+    def update(self):
+        self.life = self.life - 1
+        if self.life <= 0:
+            self.kill()
+
+
 def main():
     pg.init()
     screen = pg.display.set_mode(SCREENRECT.size)
-    # size = width, height = 800, 552
-    back_color = 0, 30, 0
-    # screen = pg.display.set_mode(size)
 
     img = load_image("tanchek.png")
     Tanchek.images = [img, pg.transform.rotate(img, -90), pg.transform.rotate(img, 180), pg.transform.rotate(img, 90)]
     img = load_image("ammo.png")
     Ammo.images = [img, pg.transform.rotate(img, -90), pg.transform.rotate(img, 180), pg.transform.rotate(img, 90)]
+    img = load_image("obstacle1.png")
+    crashed_img = load_image("obstacle2.png")
+    Obstacle.images = [img, crashed_img]
+    img = load_image("explosion.png")
+    Explosion.images = [img]
 
     back_piece = load_image("back.png")
     background = pg.Surface(SCREENRECT.size)
@@ -101,15 +136,24 @@ def main():
     # pg.display.flip()
 
     ammos = pg.sprite.Group()
-
+    obstacles = pg.sprite.Group()
     all = pg.sprite.RenderUpdates()
+
     Tanchek.containers = all
     Ammo.containers = ammos, all
+    Obstacle.containers = obstacles, all
+    Explosion.containers = all
 
     clock = pg.time.Clock()
 
     tanchek = Tanchek()
-    #screen.blit(tanchek.image, tanchek.rect)
+
+    obstacle_cycle = 0
+    i = 100
+    while obstacle_cycle < MAX_OBSTACLES:
+        Obstacle(random.randint(i, i + SCREENRECT.width // 5), random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
+        i += 80 + SCREENRECT.width // 5
+        obstacle_cycle += 1
 
     while True:
         for event in pg.event.get():
@@ -134,6 +178,14 @@ def main():
         if not tanchek.reloading and firing and len(ammos) < MAX_SHOTS:
             Ammo(tanchek.rect.center, tanchek.facing)
         tanchek.reloading = firing
+
+        for obstacle in pg.sprite.groupcollide(obstacles, ammos, 0, 1):
+            Explosion(obstacle)
+            obstacle.collide_counter += 1
+            if obstacle.collide_counter == 2:
+                obstacle.image = Obstacle.images[1]
+            elif obstacle.collide_counter == 4:
+                obstacle.kill()
 
         dirty = all.draw(screen)
         pg.display.update(dirty)
