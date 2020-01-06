@@ -20,8 +20,13 @@ def load_image(file):
 
 
 class Tanchek(pg.sprite.Sprite):
-    speed = 4
+    # speed = 4
     images = []
+
+    speed_up = 4
+    speed_down = 4
+    speed_right = 4
+    speed_left = 4
 
     def __init__(self):
         pg.sprite.Sprite.__init__(self, self.containers)
@@ -29,23 +34,43 @@ class Tanchek(pg.sprite.Sprite):
         self.surface = self.image.set_colorkey((255, 255, 255))
         self.rect = self.image.get_rect(midbottom=SCREENRECT.midbottom)
         self.facing = 1
+        self.direction = self.facing
         self.reloading = 0
+        self.blocks = None
 
     def move(self, direction):
         self.facing = direction
         self.surface = self.image.set_colorkey((255, 255, 255))
         if direction == 1:
             self.image = self.images[0]
-            self.rect.move_ip(0, -self.speed)
+            self.rect.move_ip(0, -self.speed_up)
         elif direction == 2:
             self.image = self.images[1]
-            self.rect.move_ip(self.speed, 0)
+            self.rect.move_ip(self.speed_right, 0)
         elif direction == 3:
             self.image = self.images[2]
-            self.rect.move_ip(0, self.speed)
+            self.rect.move_ip(0, self.speed_down)
         elif direction == 4:
             self.image = self.images[3]
-            self.rect.move_ip(-self.speed, 0)
+            self.rect.move_ip(-self.speed_left, 0)
+
+    def update(self):
+
+        block_hit_list = pg.sprite.spritecollide(self, self.blocks, False)
+        for block in block_hit_list:
+            if self.rect.top in range(block.rect.bottom - 5, block.rect.bottom + 5):
+                self.speed_up = 0
+            elif self.rect.bottom in range(block.rect.top - 5, block.rect.top + 5):
+                self.speed_down = 0
+            elif self.rect.right in range(block.rect.left - 5, block.rect.left + 5):
+                self.speed_right = 0
+            elif self.rect.left in range(block.rect.right - 5, block.rect.right + 5):
+                self.speed_left = 0
+        if not block_hit_list:
+            self.speed_up = 4
+            self.speed_down = 4
+            self.speed_right = 4
+            self.speed_left = 4
 
 
 class Ammo(pg.sprite.Sprite):
@@ -91,6 +116,7 @@ class Obstacle(pg.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=(x, y))
         self.surface = self.image.set_colorkey((255, 255, 255))
+
     def update(self):
         self.surface = self.image.set_colorkey((255, 255, 255))
 
@@ -126,10 +152,11 @@ def main():
     img = load_image("explosion.png")
     Explosion.images = [img]
 
-    back_piece = load_image("back.png")
-    background = pg.Surface(SCREENRECT.size)
-    for x in range(0, SCREENRECT.width, back_piece.get_width()):
-        background.blit(back_piece, (x, 0))  # draws backPiece onto background
+    #back_piece = load_image("back3.png")
+    #background = pg.Surface(SCREENRECT.size)
+    #for x in range(0, SCREENRECT.width, back_piece.get_width()):
+    #    background.blit(back_piece, (x, 0))  # draws backPiece onto background
+    background = load_image("back3.png")
     screen.blit(background, (0, 0))
     pg.display.flip()
     # screen.fill(back_color)
@@ -146,7 +173,8 @@ def main():
 
     clock = pg.time.Clock()
 
-    tanchek = Tanchek()
+    #tanchek = Tanchek()
+    #tanchek.blocks = obstacles
 
     obstacle_cycle = 0
     i = 100
@@ -154,6 +182,9 @@ def main():
         Obstacle(random.randint(i, i + SCREENRECT.width // 5), random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
         i += 80 + SCREENRECT.width // 5
         obstacle_cycle += 1
+
+    tanchek = Tanchek()
+    tanchek.blocks = obstacles
 
     while True:
         for event in pg.event.get():
@@ -182,9 +213,9 @@ def main():
         for obstacle in pg.sprite.groupcollide(obstacles, ammos, 0, 1):
             Explosion(obstacle)
             obstacle.collide_counter += 1
-            if obstacle.collide_counter == 2:
+            if obstacle.collide_counter == 3:
                 obstacle.image = Obstacle.images[1]
-            elif obstacle.collide_counter == 4:
+            elif obstacle.collide_counter == 6:
                 obstacle.kill()
 
         dirty = all.draw(screen)
