@@ -9,7 +9,7 @@ backColor = 0, 30, 0
 
 screen = pygame.display.set_mode(size)
 
-tanchek = pygame.image.load("images/tanchek2.png")
+tanchek = pygame.image.load("images/tanchek3.png")
 tanchekRect = tanchek.get_rect(topleft=(width / 2, height / 2))
 
 velocity_y = 0

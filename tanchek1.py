@@ -112,7 +112,7 @@ class Obstacle(pg.sprite.Sprite):
     collide_counter = 0
 
     def __init__(self, x, y):
-        pg.sprite.Sprite.__init__(self)  # , self.containers
+        pg.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=(x, y))
         self.surface = self.image.set_colorkey((255, 255, 255))
@@ -138,64 +138,9 @@ class Explosion(pg.sprite.Sprite):
             self.kill()
 
 
-class Level:
-    ammos = None
-    obstacles = None
-
-    background = None
-
-    world_shift = 0
-
-    def __init__(self, tank):
-        self.tank = tank
-        self.ammos = pg.sprite.Group()
-        self.obstacles = pg.sprite.Group()
-        self.world_shift = 0
-
-    def update(self):
-        self.ammos.update()
-        self.obstacles.update()
-
-    def draw(self, screen):
-        screen.blit(self.background, (0, 0))  # self.world_shift // 3, 0
-
-        self.ammos.draw(screen)
-        self.obstacles.draw(screen)
-
-    def shift_world(self, shift_y):
-
-        self.world_shift += shift_y
-
-        for obstacle in self.obstacles:
-            obstacle.rect.y += shift_y
-
-        for ammo in self.ammos:
-            ammo.rect.y += shift_y
-
-
-class Level_1(Level):
-
-    def __init__(self, tank):
-        Level.__init__(self, tank)
-
-        self.background = load_image("back3.png")
-
-        obstacle_cycle = 0
-        i = 100
-        while obstacle_cycle < MAX_OBSTACLES:
-            ob = Obstacle(random.randint(i, i + SCREENRECT.width // 5),
-                          random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
-            i += 80 + SCREENRECT.width // 5
-            obstacle_cycle += 1
-            self.obstacles.add(ob)
-
-
 def main():
     pg.init()
     screen = pg.display.set_mode(SCREENRECT.size)
-
-    # tanchek = Tanchek()
-    # cur_lev = Level_1(tanchek)
 
     img = load_image("tanchek.png")
     Tanchek.images = [img, pg.transform.rotate(img, -90), pg.transform.rotate(img, 180), pg.transform.rotate(img, 90)]
@@ -207,9 +152,9 @@ def main():
     img = load_image("explosion.png")
     Explosion.images = [img]
 
-    # back_piece = load_image("back3.png")
-    # background = pg.Surface(SCREENRECT.size)
-    # for x in range(0, SCREENRECT.width, back_piece.get_width()):
+    #back_piece = load_image("back3.png")
+    #background = pg.Surface(SCREENRECT.size)
+    #for x in range(0, SCREENRECT.width, back_piece.get_width()):
     #    background.blit(back_piece, (x, 0))  # draws backPiece onto background
     background = load_image("back3.png")
     screen.blit(background, (0, 0))
@@ -217,37 +162,29 @@ def main():
     # screen.fill(back_color)
     # pg.display.flip()
 
-    # ammos = pg.sprite.Group()
-    # obstacles = pg.sprite.Group()
+    ammos = pg.sprite.Group()
+    obstacles = pg.sprite.Group()
     all = pg.sprite.RenderUpdates()
 
-    # Tanchek.containers = all
-    # Ammo.containers = cur_lev.ammos, all #ammos, all
-    # Obstacle.containers = cur_lev.obstacles, all #obstacles, all
-    # Explosion.containers = all
+    Tanchek.containers = all
+    Ammo.containers = ammos, all
+    Obstacle.containers = obstacles, all
+    Explosion.containers = all
 
     clock = pg.time.Clock()
 
-    Tanchek.containers = all
+    #tanchek = Tanchek()
+    #tanchek.blocks = obstacles
+
+    obstacle_cycle = 0
+    i = 100
+    while obstacle_cycle < MAX_OBSTACLES:
+        Obstacle(random.randint(i, i + SCREENRECT.width // 5), random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
+        i += 80 + SCREENRECT.width // 5
+        obstacle_cycle += 1
+
     tanchek = Tanchek()
-    cur_lev = Level_1(tanchek)
-
-    Ammo.containers = cur_lev.ammos, all  # ammos, all
-    # Obstacle.containers = cur_lev.obstacles, all #obstacles, all
-    Explosion.containers = all
-
-    # tanchek = Tanchek()
-    # tanchek.blocks = obstacles
-
-    # obstacle_cycle = 0
-    # i = 100
-    # while obstacle_cycle < MAX_OBSTACLES:
-    #     Obstacle(random.randint(i, i + SCREENRECT.width // 5), random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
-    #     i += 80 + SCREENRECT.width // 5
-    #     obstacle_cycle += 1
-
-    # tanchek = Tanchek()
-    tanchek.blocks = cur_lev.obstacles  # obstacles
+    tanchek.blocks = obstacles
 
     while True:
         for event in pg.event.get():
@@ -269,11 +206,11 @@ def main():
             tanchek.move(3)
 
         firing = keystate[pg.K_SPACE]
-        if not tanchek.reloading and firing and len(cur_lev.ammos) < MAX_SHOTS:
+        if not tanchek.reloading and firing and len(ammos) < MAX_SHOTS:
             Ammo(tanchek.rect.center, tanchek.facing)
         tanchek.reloading = firing
 
-        for obstacle in pg.sprite.groupcollide(cur_lev.obstacles, cur_lev.ammos, 0, 1):
+        for obstacle in pg.sprite.groupcollide(obstacles, ammos, 0, 1):
             Explosion(obstacle)
             obstacle.collide_counter += 1
             if obstacle.collide_counter == 3:
@@ -281,14 +218,8 @@ def main():
             elif obstacle.collide_counter == 6:
                 obstacle.kill()
 
-        if tanchek.rect.top <= 300:
-            diff = tanchek.rect.top - 300
-            cur_lev.shift_world(-diff)
-
         dirty = all.draw(screen)
         pg.display.update(dirty)
-
-        cur_lev.draw(screen)
 
         clock.tick(40)
 
