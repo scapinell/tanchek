@@ -8,7 +8,7 @@ SCREENRECT = pg.Rect(0, 0, 800, 552)
 # size = width, height = 1000, 800
 MAX_SHOTS = 10
 MAX_OBSTACLES = 3
-MAX_ENEMIES = 1
+MAX_ENEMIES_SHOTS = 2
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]  # D:\somegame
 
@@ -86,6 +86,8 @@ class Enemy(pg.sprite.Sprite):
         self.blocks = None
         self.facing = 1
         self.direction = self.facing
+        self.reloading = 0
+        self.ready_to_fire = 0
 
     def update(self):
 
@@ -93,12 +95,16 @@ class Enemy(pg.sprite.Sprite):
         for block in block_hit_list:
             if self.rect.top in range(block.rect.bottom - 5, block.rect.bottom + 5):
                 self.speed_up = 0
+                self.ready_to_fire = 1
             elif self.rect.bottom in range(block.rect.top - 5, block.rect.top + 5):
                 self.speed_down = 0
+                self.ready_to_fire = 1
             elif self.rect.right in range(block.rect.left - 5, block.rect.left + 5):
                 self.speed_right = 0
+                self.ready_to_fire = 1
             elif self.rect.left in range(block.rect.right - 5, block.rect.right + 5):
                 self.speed_left = 0
+                self.ready_to_fire = 1
         if not block_hit_list:
             self.speed_up, self.speed_down, self.speed_right, self.speed_left = 3, 3, 3, 3
 
@@ -250,6 +256,12 @@ def main():
     tanchek = Tanchek()
     tanchek.blocks = obstacles
 
+
+    #MOVEEVENT, t = pg.USEREVENT + 1, 100000
+    #pg.time.set_timer(MOVEEVENT, t)
+
+
+
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -273,6 +285,32 @@ def main():
         if not tanchek.reloading and firing and len(ammos) < MAX_SHOTS:
             Ammo(tanchek.rect.center, tanchek.facing)
         tanchek.reloading = firing
+
+
+
+        if enemy.rect.bottom < tanchek.rect.bottom:
+            enemy.move(3)
+        if enemy.rect.centerx == tanchek.rect.centerx or enemy.rect.centery - 50 < tanchek.rect.centery < enemy.rect.centery + 50:
+            enemy.ready_to_fire = 1
+            if tanchek.rect.centerx > enemy.rect.centerx:
+                enemy.move(2)
+
+
+       # for e in pg.event.get():
+       #     if e.type == MOVEEVENT:
+         #       enemy.ready_to_fire = 1
+
+
+
+        if enemy.ready_to_fire and len(ammos) < MAX_ENEMIES_SHOTS:
+            Ammo(enemy.rect.center, enemy.facing)
+        enemy.ready_to_fire = 0
+
+
+        #if enemy.ready_to_fire and not enemy.reloading:
+            #Ammo(enemy.rect.center, enemy.facing)
+
+
 
         for obstacle in pg.sprite.groupcollide(obstacles, ammos, 0, 1):
             Explosion(obstacle)
