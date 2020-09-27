@@ -8,6 +8,7 @@ SCREENRECT = pg.Rect(0, 0, 800, 552)
 # size = width, height = 1000, 800
 MAX_SHOTS = 10
 MAX_OBSTACLES = 3
+MAX_ENEMIES = 1
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]  # D:\somegame
 
@@ -71,6 +72,51 @@ class Tanchek(pg.sprite.Sprite):
             self.speed_down = 4
             self.speed_right = 4
             self.speed_left = 4
+
+
+class Enemy(pg.sprite.Sprite):
+    speed_up, speed_down, speed_right, speed_left = 3, 3, 3, 3
+    images = []
+
+    def __init__(self, x, y):
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect(center=(x, y))
+        self.surface = self.image.set_colorkey((255, 255, 255))
+        self.blocks = None
+        self.facing = 1
+        self.direction = self.facing
+
+    def update(self):
+
+        block_hit_list = pg.sprite.spritecollide(self, self.blocks, False)
+        for block in block_hit_list:
+            if self.rect.top in range(block.rect.bottom - 5, block.rect.bottom + 5):
+                self.speed_up = 0
+            elif self.rect.bottom in range(block.rect.top - 5, block.rect.top + 5):
+                self.speed_down = 0
+            elif self.rect.right in range(block.rect.left - 5, block.rect.left + 5):
+                self.speed_right = 0
+            elif self.rect.left in range(block.rect.right - 5, block.rect.right + 5):
+                self.speed_left = 0
+        if not block_hit_list:
+            self.speed_up, self.speed_down, self.speed_right, self.speed_left = 3, 3, 3, 3
+
+    def move(self, direction):
+        self.facing = direction
+        self.surface = self.image.set_colorkey((255, 255, 255))
+        if direction == 1:
+            self.image = self.images[0]
+            self.rect.move_ip(0, -self.speed_up)
+        elif direction == 2:
+            self.image = self.images[1]
+            self.rect.move_ip(self.speed_right, 0)
+        elif direction == 3:
+            self.image = self.images[2]
+            self.rect.move_ip(0, self.speed_down)
+        elif direction == 4:
+            self.image = self.images[3]
+            self.rect.move_ip(-self.speed_left, 0)
 
 
 class Ammo(pg.sprite.Sprite):
@@ -151,10 +197,12 @@ def main():
     Obstacle.images = [img, crashed_img]
     img = load_image("explosion.png")
     Explosion.images = [img]
+    img = load_image("enemy.png")
+    Enemy.images = [img, pg.transform.rotate(img, -90), pg.transform.rotate(img, 180), pg.transform.rotate(img, 90)]
 
-    #back_piece = load_image("back3.png")
-    #background = pg.Surface(SCREENRECT.size)
-    #for x in range(0, SCREENRECT.width, back_piece.get_width()):
+    # back_piece = load_image("back3.png")
+    # background = pg.Surface(SCREENRECT.size)
+    # for x in range(0, SCREENRECT.width, back_piece.get_width()):
     #    background.blit(back_piece, (x, 0))  # draws backPiece onto background
     background = load_image("back3.png")
     screen.blit(background, (0, 0))
@@ -164,24 +212,40 @@ def main():
 
     ammos = pg.sprite.Group()
     obstacles = pg.sprite.Group()
+    enemies = pg.sprite.Group()
     all = pg.sprite.RenderUpdates()
 
     Tanchek.containers = all
     Ammo.containers = ammos, all
     Obstacle.containers = obstacles, all
+    Enemy.containers = enemies, all
     Explosion.containers = all
 
     clock = pg.time.Clock()
 
-    #tanchek = Tanchek()
-    #tanchek.blocks = obstacles
+    # tanchek = Tanchek()
+    # tanchek.blocks = obstacles
 
     obstacle_cycle = 0
+    all_obstacles = []
     i = 100
     while obstacle_cycle < MAX_OBSTACLES:
-        Obstacle(random.randint(i, i + SCREENRECT.width // 5), random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
+        ob = Obstacle(random.randint(i, i + SCREENRECT.width // 5),
+                      random.randint(20, SCREENRECT.height - SCREENRECT.height // 3))
+        all_obstacles.append(ob)
         i += 80 + SCREENRECT.width // 5
         obstacle_cycle += 1
+
+    all_obstacles.sort(key=lambda x: x.rect.left)
+
+    bott_to_bott = SCREENRECT.height - all_obstacles[0].rect.bottom
+    top_to_top = SCREENRECT.height - all_obstacles[0].rect.top - all_obstacles[0].rect.height
+    if bott_to_bott > top_to_top:
+        enemy = Enemy(100, random.randint(top_to_top + all_obstacles[0].rect.height + bott_to_bott // 2))
+        enemy.blocks = obstacles
+    else:
+        enemy = Enemy(100, random.randint(0, top_to_top // 2))
+        enemy.blocks = obstacles
 
     tanchek = Tanchek()
     tanchek.blocks = obstacles
