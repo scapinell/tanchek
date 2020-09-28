@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import time
 
 import pygame as pg
 
@@ -8,7 +9,7 @@ SCREENRECT = pg.Rect(0, 0, 800, 552)
 # size = width, height = 1000, 800
 MAX_SHOTS = 10
 MAX_OBSTACLES = 3
-MAX_ENEMIES_SHOTS = 2
+MAX_ENEMIES_SHOTS = 10
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]  # D:\somegame
 
@@ -75,7 +76,7 @@ class Tanchek(pg.sprite.Sprite):
 
 
 class Enemy(pg.sprite.Sprite):
-    speed_up, speed_down, speed_right, speed_left = 3, 3, 3, 3
+    speed_up, speed_down, speed_right, speed_left = 1, 1, 1, 1
     images = []
 
     def __init__(self, x, y):
@@ -106,7 +107,7 @@ class Enemy(pg.sprite.Sprite):
                 self.speed_left = 0
                 self.ready_to_fire = 1
         if not block_hit_list:
-            self.speed_up, self.speed_down, self.speed_right, self.speed_left = 3, 3, 3, 3
+            self.speed_up, self.speed_down, self.speed_right, self.speed_left = 1, 1, 1, 1
 
     def move(self, direction):
         self.facing = direction
@@ -191,6 +192,8 @@ class Explosion(pg.sprite.Sprite):
 
 
 def main():
+    #global shot
+    global shot
     pg.init()
     screen = pg.display.set_mode(SCREENRECT.size)
 
@@ -257,8 +260,8 @@ def main():
     tanchek.blocks = obstacles
 
 
-    #MOVEEVENT, t = pg.USEREVENT + 1, 100000
-    #pg.time.set_timer(MOVEEVENT, t)
+    MOVEEVENT, t = pg.USEREVENT + 1, 1
+    pg.time.set_timer(MOVEEVENT, t)
 
 
 
@@ -290,21 +293,28 @@ def main():
 
         if enemy.rect.bottom < tanchek.rect.bottom:
             enemy.move(3)
-        if enemy.rect.centerx == tanchek.rect.centerx or enemy.rect.centery - 50 < tanchek.rect.centery < enemy.rect.centery + 50:
+        if enemy.rect.centerx - 50 < tanchek.rect.centerx < enemy.rect.centerx + 50 \
+                or enemy.rect.centery - 50 < tanchek.rect.centery or tanchek.rect.centery < enemy.rect.centery + 50:
             enemy.ready_to_fire = 1
             if tanchek.rect.centerx > enemy.rect.centerx:
                 enemy.move(2)
 
 
-       # for e in pg.event.get():
-       #     if e.type == MOVEEVENT:
-         #       enemy.ready_to_fire = 1
+
+         #       Ammo(enemy.rect.center, enemy.facing)
+        #shot = Ammo(enemy.rect.center, enemy.facing)
+        if not enemy.reloading and enemy.ready_to_fire and len(ammos) < MAX_ENEMIES_SHOTS:
+            shot = Ammo(enemy.rect.center, enemy.facing)
+            print("yes")
+            enemy.reloading = 1
+            print(shot.rect.left)
+            print(enemy.rect.right)
+        if shot.rect.left > enemy.rect.right + 50 or shot.rect.top > enemy.rect.bottom + 50:
+            print("ok")
+            enemy.reloading = 0
 
 
 
-        if enemy.ready_to_fire and len(ammos) < MAX_ENEMIES_SHOTS:
-            Ammo(enemy.rect.center, enemy.facing)
-        enemy.ready_to_fire = 0
 
 
         #if enemy.ready_to_fire and not enemy.reloading:
